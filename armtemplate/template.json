@@ -1,0 +1,245 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "resourceGroupName": {
+            "defaultValue": "[resourceGroup().name]",
+            "type": "string"
+        },
+        "location": {
+            "defaultValue": "[resourceGroup().location]",
+            "type": "string"
+        },
+        "vnet_prefix":{
+            "defaultValue": "150.0.0.0/16",
+            "type": "string"
+        },
+        "subnet_app_prefix":{
+            "defaultValue": "150.0.1.0/24",
+            "type": "string"
+        },
+        "subnet_data_prefix":{
+            "defaultValue": "150.0.2.0/24",
+            "type": "string"
+        },
+        "adminUsername": {
+            "type": "string",
+            "metadata": {
+                "description": "Username for the linux and windows VM"
+            }
+        },
+        "adminPassword": {
+            "type": "securestring",
+            "metadata": {
+                "description": "Password for the linux and windows VM"
+            }
+        }        
+    },
+    "variables": {
+        "vnet_name": "web-vnet",
+        "linux_app_service_name": "linux-app-plan",
+        "publicIpWindowsVM": "data-ip",
+        "nsg-lockdown": "lockdown-nsg",
+        "storage_name": "[concat('ntierstorage',substring(uniqueString(resourceGroup().id),0,6))]",
+        "sqlVM": "sql1",
+        "subnetRef": "[resourceID(parameters('resourceGroupName'), 'Microsoft.Network/virtualNetWorks/subnets', variables('vnet_name'), 'data')]",
+        "sqlnetworkInterface": "nic-sql",
+        "sqlVMSize": "Standard_B4ms",
+        "dataDisks": {
+            "createOption": "empty",            
+            "writeAcceleratorEnabled": false,
+            "storageAccountType": "Premium_LRS",
+            "diskSizeGB": 32
+        }        
+
+    },
+    "resources": [
+        {
+            "type": "Microsoft.Network/virtualNetworks",
+            "apiVersion": "2019-06-01",
+            "name": "[variables('vnet_name')]",
+            "location": "[parameters('location')]",
+            "properties": {
+                "addressSpace": {
+                    "addressPrefixes": [
+                        "[parameters('vnet_prefix')]"
+                    ]
+                },
+                "subnets": [
+                    {
+                        "name": "app",                        
+                        "properties": {                            
+                            "addressPrefix": "[parameters('subnet_app_prefix')]"
+                        }
+                    },
+                    {
+                        "name": "data",                        
+                        "properties": {                            
+                            "addressPrefix": "[parameters('subnet_data_prefix')]"
+                        }
+                    }                    
+                ]
+            }
+        },
+        {
+            "type": "Microsoft.Network/networkSecurityGroups",
+            "apiVersion": "2019-06-01",
+            "name": "[variables('nsg-lockdown')]",
+            "location": "[parameters('location')]",
+            "properties": {
+                "securityRules": []
+            }
+        },        
+        {
+            "type": "Microsoft.Network/publicIPAddresses",
+            "apiVersion": "2019-06-01",
+            "name": "[variables('publicIpWindowsVM')]",
+            "location": "[parameters('location')]",
+            "sku": {
+                "name": "Basic",
+                "tier": "Regional"
+            },            
+            "properties": {
+                "publicIPAllocationMethod": "Dynamic",
+                "publicIPAddressVersion": "IPv4"
+            }
+        },
+        {
+            "type": "Microsoft.Network/networkInterfaces",
+            "apiVersion": "2018-10-01",
+            "name": "[variables('sqlnetworkInterface')]",
+            "location": "[parameters('location')]",
+            "dependsOn": [
+              "[concat('Microsoft.Network/networkSecurityGroups/', variables('nsg-lockdown'))]",
+              "[concat('Microsoft.Network/publicIpAddresses/', variables('publicIpWindowsVM'))]"
+            ],
+            "properties": {
+              "ipConfigurations": [
+                {
+                  "name": "ipconfig1",
+                  "properties": {
+                    "subnet": {
+                      "id": "[variables('subnetRef')]"
+                    },
+                    "privateIPAllocationMethod": "Dynamic",
+                    "publicIpAddress": {
+                      "id": "[resourceId('Microsoft.Network/publicIpAddresses', variables('publicIpWindowsVM'))]"
+                    }
+                  }
+                }
+              ],
+              "enableAcceleratedNetworking": false,
+              "networkSecurityGroup": {
+                "id": "[variables('nsg-lockdown')]"
+              }
+            }
+        },
+        {
+            "type": "Microsoft.Compute/virtualMachines",
+            "apiVersion": "2019-06-01",
+            "name": "[variables('sqlVM')]",
+            "location": "[parameters('location')]",
+            "dependsOn": [
+              "[concat('Microsoft.Network/networkInterfaces/', variables('sqlnetworkInterface'))]"
+            ],
+            "properties": {
+              "hardwareProfile": {
+                "vmSize": "[variables('sqlVMSize')]"
+              },
+              "storageProfile": {
+                "osDisk": {
+                  "createOption": "fromImage",
+                  "managedDisk": {
+                    "storageAccountType": "Premium_LRS"
+                  }
+                },
+                "imageReference": {
+                  "publisher": "MicrosoftSQLServer",
+                  "offer": "SQL2017-WS2016",
+                  "sku": "SQLDEV",
+                  "version": "latest"
+                },
+                "copy": [
+                  {
+                    "name": "dataDisks",
+                    "count": "[add('1', '1')]",
+                    "input": {
+                      "lun": "[copyIndex('dataDisks')]",
+                      "createOption": "[variables('dataDisks').createOption]",                                            
+                      "diskSizeGB": "[variables('dataDisks').diskSizeGB]",
+                      "managedDisk": {
+                        "storageAccountType": "[variables('dataDisks').storageAccountType]"
+                      }
+                    }
+                  }
+                ]
+              },
+              "networkProfile": {
+                "networkInterfaces": [
+                  {
+                    "id": "[resourceId('Microsoft.Network/networkInterfaces', variables('sqlnetworkInterface'))]"
+                  }
+                ]
+              },
+              "osProfile": {
+                "computerName": "[variables('sqlVM')]",
+                "adminUsername": "[parameters('adminUsername')]",
+                "adminPassword": "[parameters('adminPassword')]",
+                "windowsConfiguration": {
+                  "enableAutomaticUpdates": false,
+                  "provisionVmAgent": true
+                }
+              }
+            }
+        },      
+        {
+            "type": "Microsoft.SqlVirtualMachine/SqlVirtualMachines",
+            "apiVersion": "2019-06-01",
+            "name": "[variables('sqlVM')]",
+            "location": "[parameters('location')]",
+            "dependsOn": [
+              "[resourceId('Microsoft.Compute/virtualMachines', variables('sqlVM'))]"
+            ],
+            "properties": {
+              "virtualMachineResourceId": "[resourceId('Microsoft.Compute/virtualMachines', variables('sqlVM'))]",
+              "sqlManagement": "Full",
+              "SqlServerLicenseType": "PAYG",
+              "StorageConfigurationSettings": {
+                "DiskConfigurationType": "NEW",
+                "StorageWorkloadType": "General"
+              }
+            }
+        },           
+        {
+            "type": "Microsoft.Storage/storageAccounts",
+            "apiVersion": "2019-06-01",
+            "name": "[variables('storage_name')]",
+            "location": "[parameters('location')]",
+            "sku": {
+                "name": "Standard_LRS",
+                "tier": "Standard"
+            },
+            "kind": "Storage",
+            "properties": {
+                "networkAcls": {
+                    "bypass": "AzureServices",
+                    "virtualNetworkRules": [],
+                    "ipRules": [],
+                    "defaultAction": "Allow"
+                },
+                "supportsHttpsTrafficOnly": true,
+                "encryption": {
+                    "services": {
+                        "file": {
+                            "enabled": true
+                        },
+                        "blob": {
+                            "enabled": true
+                        }
+                    },
+                    "keySource": "Microsoft.Storage"
+                }
+            }
+        }                  
+    ]
+}
