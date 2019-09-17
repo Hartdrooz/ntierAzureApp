@@ -135,81 +135,21 @@
             }
         },
         {
-            "type": "Microsoft.Compute/virtualMachines",
-            "apiVersion": "2019-06-01",
+            "type": "Microsoft.SqlVirtualMachine/sqlVirtualMachines",
+            "apiVersion": "2017-03-01-preview",
             "name": "[variables('sqlVM')]",
             "location": "[parameters('location')]",
             "dependsOn": [
-              "[concat('Microsoft.Network/networkInterfaces/', variables('sqlnetworkInterface'))]"
+                "[resourceId('Microsoft.Compute/virtualMachines', variables('sqlVM'))]"
             ],
             "properties": {
-              "hardwareProfile": {
-                "vmSize": "[variables('sqlVMSize')]"
-              },
-              "storageProfile": {
-                "osDisk": {
-                  "createOption": "fromImage",
-                  "managedDisk": {
-                    "storageAccountType": "Premium_LRS"
-                  }
-                },
-                "imageReference": {
-                  "publisher": "MicrosoftSQLServer",
-                  "offer": "SQL2017-WS2016",
-                  "sku": "SQLDEV",
-                  "version": "latest"
-                },
-                "copy": [
-                  {
-                    "name": "dataDisks",
-                    "count": "[add('1', '1')]",
-                    "input": {
-                      "lun": "[copyIndex('dataDisks')]",
-                      "createOption": "[variables('dataDisks').createOption]",                                            
-                      "diskSizeGB": "[variables('dataDisks').diskSizeGB]",
-                      "managedDisk": {
-                        "storageAccountType": "[variables('dataDisks').storageAccountType]"
-                      }
-                    }
-                  }
-                ]
-              },
-              "networkProfile": {
-                "networkInterfaces": [
-                  {
-                    "id": "[resourceId('Microsoft.Network/networkInterfaces', variables('sqlnetworkInterface'))]"
-                  }
-                ]
-              },
-              "osProfile": {
-                "computerName": "[variables('sqlVM')]",
-                "adminUsername": "[parameters('adminUsername')]",
-                "adminPassword": "[parameters('adminPassword')]",
-                "windowsConfiguration": {
-                  "enableAutomaticUpdates": false,
-                  "provisionVmAgent": true
-                }
-              }
+                "virtualMachineResourceId": "[resourceId('Microsoft.Compute/virtualMachines', variables('sqlVM'))]",
+                "sqlImageOffer": "SQL2017-WS2016",
+                "sqlServerLicenseType": "PAYG",
+                "sqlManagement": "Full",
+                "sqlImageSku": "Developer"
             }
-        },      
-        {
-            "type": "Microsoft.SqlVirtualMachine/SqlVirtualMachines",
-            "apiVersion": "2019-06-01",
-            "name": "[variables('sqlVM')]",
-            "location": "[parameters('location')]",
-            "dependsOn": [
-              "[resourceId('Microsoft.Compute/virtualMachines', variables('sqlVM'))]"
-            ],
-            "properties": {
-              "virtualMachineResourceId": "[resourceId('Microsoft.Compute/virtualMachines', variables('sqlVM'))]",
-              "sqlManagement": "Full",
-              "SqlServerLicenseType": "PAYG",
-              "StorageConfigurationSettings": {
-                "DiskConfigurationType": "NEW",
-                "StorageWorkloadType": "General"
-              }
-            }
-        },           
+        },                    
         {
             "type": "Microsoft.Storage/storageAccounts",
             "apiVersion": "2019-06-01",
