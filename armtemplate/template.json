@@ -216,7 +216,6 @@
                     "osDisk": {
                         "osType": "Windows",                        
                         "createOption": "FromImage",
-                        "caching": "ReadWrite",
                         "managedDisk": {
                             "storageAccountType": "Premium_LRS"                            
                         },
@@ -239,13 +238,7 @@
                 "osProfile": {
                     "computerName": "[variables('sqlVM')]",
                     "adminUsername": "[parameters('adminUsername')]",
-                    "adminPassword": "[parameters('adminPassword')]",
-                    "windowsConfiguration": {
-                        "provisionVMAgent": true,
-                        "enableAutomaticUpdates": false
-                    },
-                    "secrets": [],
-                    "allowExtensionOperations": false
+                    "adminPassword": "[parameters('adminPassword')]"
                 },
                 "networkProfile": {
                     "networkInterfaces": [

@@ -30,3 +30,11 @@ if ($locationIdx -gt 3 -or $locationIdx -lt 1) {
    Write-Error "The location entered is invalid it needs to be an integer betweeen 1 and 3"
    exit
 }
+
+$selectedLocation = $primaryLocations[$locationIdx]
+$deploymentName = generateDeploymentName
+
+
+New-AzResourceGroupDeployment -Name $deploymentName -ResourceGroupName $resourceGroupName -TemplateFile .\template.json -location $selectedLocation
+
+Write-Host "Deployment completed with deployment name $deploymentName"
