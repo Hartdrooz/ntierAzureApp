@@ -1,326 +1,490 @@
-// 20190917122559
-// https://raw.githubusercontent.com/Azure/azure-quickstart-templates/master/101-sql-vm-new-storage/azuredeploy.json
-
 {
-    "$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
-    "contentVersion": "1.0.0.0",
-    "parameters": {
-      "virtualMachineName": {
-        "type": "String",
-        "defaultValue": "myVM",
-        "metadata": {
-          "description": "The name of the VM"
-        }
+  "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+      "extensions_Microsoft.Insights.VMDiagnosticsSettings_xmlCfg": {
+          "defaultValue": null,
+          "type": "SecureString"
       },
-      "virtualMachineSize": {
-        "type": "String",
-        "defaultValue": "Standard_DS13_v2",
-        "allowedValues": [
-          "Standard_DS13_v2",
-          "Standard_DS3_v2"
-        ],
-        "metadata": {
-          "description": "The virtual machine size."
-        }
+      "extensions_Microsoft.Insights.VMDiagnosticsSettings_storageAccountName": {
+          "defaultValue": null,
+          "type": "SecureString"
       },
-      "existingVirtualNetworkName": {
-        "type": "String",
-        "metadata": {
-          "description": "Specify the name of an existing VNet in the same resource group"
-        }
+      "extensions_Microsoft.Insights.VMDiagnosticsSettings_storageAccountKey": {
+          "defaultValue": null,
+          "type": "SecureString"
       },
-      "existingVnetResourceGroup": {
-        "type": "String",
-        "metadata": {
-          "description": "Specify the resrouce group of the existing VNet"
-        },
-        "defaultValue": "[resourceGroup().name]"
+      "extensions_Microsoft.Insights.VMDiagnosticsSettings_storageAccountEndPoint": {
+          "defaultValue": null,
+          "type": "SecureString"
       },
-      "existingSubnetName": {
-        "type": "String",
-        "metadata": {
-          "description": "Specify the name of the Subnet Name"
-        }
+      "virtualMachines_sql1_name": {
+          "defaultValue": "sql1",
+          "type": "String"
       },
-      "imageOffer": {
-        "type": "String",
-        "allowedValues": [
-          "SQL2017-WS2016",
-          "SQL2016SP1-WS2016",
-          "SQL2016SP2-WS2016",
-          "SQL2014SP3-WS2012R2",
-          "SQL2014SP2-WS2012R2"
-        ],
-        "defaultValue": "SQL2017-WS2016",
-        "metadata": {
-          "description": "Windows Server and SQL Offer"
-        }
+      "networkInterfaces_sql1296_name": {
+          "defaultValue": "sql1296",
+          "type": "String"
       },
-      "sqlSku": {
-        "type": "String",
-        "allowedValues": [
-          "Standard",
-          "Enterprise",
-          "SQLDEV",
-          "Web",
-          "Express"
-        ],
-        "defaultValue": "Standard",
-        "metadata": {
-          "description": "SQL Server Sku"
-        }
+      "publicIPAddresses_sql1_ip_name": {
+          "defaultValue": "sql1-ip",
+          "type": "String"
       },
-      "adminUsername": {
-        "type": "String",
-        "metadata": {
-          "description": "The admin user name of the VM"
-        }
+      "virtualNetworks_test3_vnet_name": {
+          "defaultValue": "test3-vnet",
+          "type": "String"
       },
-      "adminPassword": {
-        "type": "SecureString",
-        "metadata": {
-          "description": "The admin password of the VM"
-        }
+      "storageAccounts_test3diag473_name": {
+          "defaultValue": "test3diag473",
+          "type": "String"
       },
-      "storageWorkloadType": {
-        "type": "String",
-        "allowedValues": [
-          "General",
-          "OLTP",
-          "DW"
-        ],
-        "defaultValue": "General",
-        "metadata": {
-          "description": "SQL Server Workload Type"
-        }
+      "networkSecurityGroups_sql1_nsg_name": {
+          "defaultValue": "sql1-nsg",
+          "type": "String"
       },
-      "sqlDataDisksCount": {
-        "type": "int",
-        "defaultValue": 1,
-        "minValue": 1,
-        "maxValue": 8,
-        "metadata": {
-          "description": "Amount of data disks (1TB each) for SQL Data files"
-        }
-      },
-      "dataPath": {
-        "type": "String",
-        "defaultValue": "F:\\SQLData",
-        "metadata": {
-          "description": "Path for SQL Data files"
-        }
-      },
-      "sqlLogDisksCount": {
-        "type": "int",
-        "defaultValue": 1,
-        "minValue": 1,
-        "maxValue": 8,
-        "metadata": {
-          "description": "Amount of data disks (1TB each) for SQL Log files"
-        }
-      },
-      "logPath": {
-        "type": "String",
-        "defaultValue": "G:\\SQLLog",
-        "metadata": {
-          "description": "Path for SQL Log files"
-        }
-      },
-      "tempDbPath": {
-        "type": "String",
-        "defaultValue": "D:\\SQLTemp",
-        "metadata": {
-          "description": "Path for SQL Temp DB files"
-        }
-      },
-      "location": {
-        "type": "string",
-        "metadata": {
-          "description": "Location for all resources."
-        },
-        "defaultValue": "[resourceGroup().location]"
+      "sqlVirtualMachines_sql1_name": {
+          "defaultValue": "sql1",
+          "type": "String"
       }
-    },
-    "variables": {
-      "networkInterfaceName": "[concat(parameters('virtualMachineName'), '-nic')]",
-      "networkSecurityGroupName": "[concat(parameters('virtualMachineName'), '-nsg')]",
-      "networkSecurityGroupRules": [
-        {
-          "name": "RDP",
+  },
+  "variables": {},
+  "resources": [
+      {
+          "type": "Microsoft.Network/networkSecurityGroups",
+          "apiVersion": "2019-06-01",
+          "name": "[parameters('networkSecurityGroups_sql1_nsg_name')]",
+          "location": "eastus",
+          "tags": {
+              "CreatedBy": "Hugo Girard"
+          },
           "properties": {
-            "priority": 300,
-            "protocol": "TCP",
-            "access": "Allow",
-            "direction": "Inbound",
-            "sourceAddressPrefix": "*",
-            "sourcePortRange": "*",
-            "destinationAddressPrefix": "*",
-            "destinationPortRange": "3389"
-          }
-        }
-      ],
-      "publicIpAddressName": "[concat(parameters('virtualMachineName'), '-publicip-', uniqueString(parameters('virtualMachineName')))]",
-      "publicIpAddressType": "Dynamic",
-      "publicIpAddressSku": "Basic",
-      "diskConfigurationType": "NEW",
-      "nsgId": "[resourceId('Microsoft.Network/networkSecurityGroups', variables('networkSecurityGroupName'))]",
-      "subnetRef": "[resourceID(parameters('existingVNetResourceGroup'), 'Microsoft.Network/virtualNetWorks/subnets', parameters('existingVirtualNetworkName'), parameters('existingSubNetName'))]",
-      "dataDisksLuns": "[array(range(0 ,parameters('sqlDataDisksCount')))]",
-      "logDisksLuns": "[array(range(parameters('sqlDataDisksCount'), parameters('sqlLogDisksCount')))]",
-      "dataDisks": {
-        "createOption": "empty",
-        "caching": "ReadOnly",
-        "writeAcceleratorEnabled": false,
-        "storageAccountType": "Premium_LRS",
-        "diskSizeGB": 1023
-      }
-    },
-    "resources": [
-      {
-        "type": "Microsoft.Network/publicIpAddresses",
-        "apiVersion": "2019-02-01",
-        "name": "[variables('publicIpAddressName')]",
-        "location": "[parameters('location')]",
-        "sku": {
-          "name": "[variables('publicIpAddressSku')]"
-        },
-        "properties": {
-          "publicIpAllocationMethod": "[variables('publicIpAddressType')]"
-        }
-      },
-      {
-        "type": "Microsoft.Network/networkSecurityGroups",
-        "apiVersion": "2019-02-01",
-        "name": "[variables('networkSecurityGroupName')]",
-        "location": "[parameters('location')]",
-        "properties": {
-          "securityRules": "[variables('networkSecurityGroupRules')]"
-        }
-      },
-      {
-        "type": "Microsoft.Network/networkInterfaces",
-        "apiVersion": "2018-10-01",
-        "name": "[variables('networkInterfaceName')]",
-        "location": "[parameters('location')]",
-        "dependsOn": [
-          "[concat('Microsoft.Network/networkSecurityGroups/', variables('networkSecurityGroupName'))]",
-          "[concat('Microsoft.Network/publicIpAddresses/', variables('publicIpAddressName'))]"
-        ],
-        "properties": {
-          "ipConfigurations": [
-            {
-              "name": "ipconfig1",
-              "properties": {
-                "subnet": {
-                  "id": "[variables('subnetRef')]"
-                },
-                "privateIPAllocationMethod": "Dynamic",
-                "publicIpAddress": {
-                  "id": "[resourceId('Microsoft.Network/publicIpAddresses', variables('publicIpAddressName'))]"
-                }
-              }
-            }
-          ],
-          "enableAcceleratedNetworking": true,
-          "networkSecurityGroup": {
-            "id": "[variables('nsgId')]"
-          }
-        }
-      },
-      {
-        "type": "Microsoft.Compute/virtualMachines",
-        "apiVersion": "2018-10-01",
-        "name": "[parameters('virtualMachineName')]",
-        "location": "[parameters('location')]",
-        "dependsOn": [
-          "[concat('Microsoft.Network/networkInterfaces/', variables('networkInterfaceName'))]"
-        ],
-        "properties": {
-          "hardwareProfile": {
-            "vmSize": "[parameters('virtualMachineSize')]"
-          },
-          "storageProfile": {
-            "osDisk": {
-              "createOption": "fromImage",
-              "managedDisk": {
-                "storageAccountType": "Premium_LRS"
-              }
-            },
-            "imageReference": {
-              "publisher": "MicrosoftSQLServer",
-              "offer": "[parameters('imageOffer')]",
-              "sku": "[parameters('sqlSku')]",
-              "version": "latest"
-            },
-            "copy": [
-              {
-                "name": "dataDisks",
-                "count": "[add(parameters('sqlDataDisksCount'), parameters('sqlLogDisksCount'))]",
-                "input": {
-                  "lun": "[copyIndex('dataDisks')]",
-                  "createOption": "[variables('dataDisks').createOption]",
-                  "caching": "[if(greaterOrEquals(copyIndex('dataDisks'), parameters('sqlDataDisksCount')) ,'None', variables('dataDisks').caching )]",
-                  "writeAcceleratorEnabled": "[variables('dataDisks').writeAcceleratorEnabled]",
-                  "diskSizeGB": "[variables('dataDisks').diskSizeGB]",
-                  "managedDisk": {
-                    "storageAccountType": "[variables('dataDisks').storageAccountType]"
+              "provisioningState": "Succeeded",
+              "resourceGuid": "a70d8d63-37e5-418b-9c19-e96092719a9e",
+              "securityRules": [],
+              "defaultSecurityRules": [
+                  {
+                      "name": "AllowVnetInBound",
+                      "etag": "W/\"14c18649-0ac8-4601-a4ee-b0a6ac7a5593\"",
+                      "properties": {
+                          "provisioningState": "Succeeded",
+                          "description": "Allow inbound traffic from all VMs in VNET",
+                          "protocol": "*",
+                          "sourcePortRange": "*",
+                          "destinationPortRange": "*",
+                          "sourceAddressPrefix": "VirtualNetwork",
+                          "destinationAddressPrefix": "VirtualNetwork",
+                          "access": "Allow",
+                          "priority": 65000,
+                          "direction": "Inbound",
+                          "sourcePortRanges": [],
+                          "destinationPortRanges": [],
+                          "sourceAddressPrefixes": [],
+                          "destinationAddressPrefixes": []
+                      }
+                  },
+                  {
+                      "name": "AllowAzureLoadBalancerInBound",
+                      "etag": "W/\"14c18649-0ac8-4601-a4ee-b0a6ac7a5593\"",
+                      "properties": {
+                          "provisioningState": "Succeeded",
+                          "description": "Allow inbound traffic from azure load balancer",
+                          "protocol": "*",
+                          "sourcePortRange": "*",
+                          "destinationPortRange": "*",
+                          "sourceAddressPrefix": "AzureLoadBalancer",
+                          "destinationAddressPrefix": "*",
+                          "access": "Allow",
+                          "priority": 65001,
+                          "direction": "Inbound",
+                          "sourcePortRanges": [],
+                          "destinationPortRanges": [],
+                          "sourceAddressPrefixes": [],
+                          "destinationAddressPrefixes": []
+                      }
+                  },
+                  {
+                      "name": "DenyAllInBound",
+                      "etag": "W/\"14c18649-0ac8-4601-a4ee-b0a6ac7a5593\"",
+                      "properties": {
+                          "provisioningState": "Succeeded",
+                          "description": "Deny all inbound traffic",
+                          "protocol": "*",
+                          "sourcePortRange": "*",
+                          "destinationPortRange": "*",
+                          "sourceAddressPrefix": "*",
+                          "destinationAddressPrefix": "*",
+                          "access": "Deny",
+                          "priority": 65500,
+                          "direction": "Inbound",
+                          "sourcePortRanges": [],
+                          "destinationPortRanges": [],
+                          "sourceAddressPrefixes": [],
+                          "destinationAddressPrefixes": []
+                      }
+                  },
+                  {
+                      "name": "AllowVnetOutBound",
+                      "etag": "W/\"14c18649-0ac8-4601-a4ee-b0a6ac7a5593\"",
+                      "properties": {
+                          "provisioningState": "Succeeded",
+                          "description": "Allow outbound traffic from all VMs to all VMs in VNET",
+                          "protocol": "*",
+                          "sourcePortRange": "*",
+                          "destinationPortRange": "*",
+                          "sourceAddressPrefix": "VirtualNetwork",
+                          "destinationAddressPrefix": "VirtualNetwork",
+                          "access": "Allow",
+                          "priority": 65000,
+                          "direction": "Outbound",
+                          "sourcePortRanges": [],
+                          "destinationPortRanges": [],
+                          "sourceAddressPrefixes": [],
+                          "destinationAddressPrefixes": []
+                      }
+                  },
+                  {
+                      "name": "AllowInternetOutBound",
+                      "etag": "W/\"14c18649-0ac8-4601-a4ee-b0a6ac7a5593\"",
+                      "properties": {
+                          "provisioningState": "Succeeded",
+                          "description": "Allow outbound traffic from all VMs to Internet",
+                          "protocol": "*",
+                          "sourcePortRange": "*",
+                          "destinationPortRange": "*",
+                          "sourceAddressPrefix": "*",
+                          "destinationAddressPrefix": "Internet",
+                          "access": "Allow",
+                          "priority": 65001,
+                          "direction": "Outbound",
+                          "sourcePortRanges": [],
+                          "destinationPortRanges": [],
+                          "sourceAddressPrefixes": [],
+                          "destinationAddressPrefixes": []
+                      }
+                  },
+                  {
+                      "name": "DenyAllOutBound",
+                      "etag": "W/\"14c18649-0ac8-4601-a4ee-b0a6ac7a5593\"",
+                      "properties": {
+                          "provisioningState": "Succeeded",
+                          "description": "Deny all outbound traffic",
+                          "protocol": "*",
+                          "sourcePortRange": "*",
+                          "destinationPortRange": "*",
+                          "sourceAddressPrefix": "*",
+                          "destinationAddressPrefix": "*",
+                          "access": "Deny",
+                          "priority": 65500,
+                          "direction": "Outbound",
+                          "sourcePortRanges": [],
+                          "destinationPortRanges": [],
+                          "sourceAddressPrefixes": [],
+                          "destinationAddressPrefixes": []
+                      }
                   }
-                }
-              }
-            ]
-          },
-          "networkProfile": {
-            "networkInterfaces": [
-              {
-                "id": "[resourceId('Microsoft.Network/networkInterfaces', variables('networkInterfaceName'))]"
-              }
-            ]
-          },
-          "osProfile": {
-            "computerName": "[parameters('virtualMachineName')]",
-            "adminUsername": "[parameters('adminUsername')]",
-            "adminPassword": "[parameters('adminPassword')]",
-            "windowsConfiguration": {
-              "enableAutomaticUpdates": true,
-              "provisionVmAgent": true
-            }
+              ]
           }
-        }
       },
       {
-        "type": "Microsoft.SqlVirtualMachine/SqlVirtualMachines",
-        "apiVersion": "2017-03-01-preview",
-        "name": "[parameters('virtualMachineName')]",
-        "location": "[parameters('location')]",
-        "dependsOn": [
-          "[resourceId('Microsoft.Compute/virtualMachines', parameters('virtualMachineName'))]"
-        ],
-        "properties": {
-          "virtualMachineResourceId": "[resourceId('Microsoft.Compute/virtualMachines', parameters('virtualMachineName'))]",
-          "sqlManagement": "Full",
-          "SqlServerLicenseType": "PAYG",
-          "StorageConfigurationSettings": {
-            "DiskConfigurationType": "[variables('diskConfigurationType')]",
-            "StorageWorkloadType": "[parameters('storageWorkloadType')]",
-            "SQLDataSettings": {
-              "LUNs": "[variables('dataDisksLUNs')]",
-              "DefaultFilePath": "[parameters('dataPath')]"
-            },
-            "SQLLogSettings": {
-              "Luns": "[variables('logDisksLUNs')]",
-              "DefaultFilePath": "[parameters('logPath')]"
-            },
-            "SQLTempDbSettings": {
-              "DefaultFilePath": "[parameters('tempDbPath')]"
-            }
+          "type": "Microsoft.Network/publicIPAddresses",
+          "apiVersion": "2019-06-01",
+          "name": "[parameters('publicIPAddresses_sql1_ip_name')]",
+          "location": "eastus",
+          "tags": {
+              "CreatedBy": "Hugo Girard"
+          },
+          "sku": {
+              "name": "Basic",
+              "tier": "Regional"
+          },
+          "properties": {
+              "provisioningState": "Succeeded",
+              "resourceGuid": "63d5bd92-8368-437d-88d0-8cf269be4d11",
+              "ipAddress": "138.91.127.218",
+              "publicIPAddressVersion": "IPv4",
+              "publicIPAllocationMethod": "Dynamic",
+              "idleTimeoutInMinutes": 4,
+              "ipTags": []
           }
-        }
+      },
+      {
+          "type": "Microsoft.Network/virtualNetworks",
+          "apiVersion": "2019-06-01",
+          "name": "[parameters('virtualNetworks_test3_vnet_name')]",
+          "location": "eastus",
+          "tags": {
+              "CreatedBy": "Hugo Girard"
+          },
+          "properties": {
+              "provisioningState": "Succeeded",
+              "resourceGuid": "47d92bfb-3d58-4bb4-9bdc-93e45cd052d1",
+              "addressSpace": {
+                  "addressPrefixes": [
+                      "10.0.0.0/24"
+                  ]
+              },
+              "subnets": [
+                  {
+                      "name": "default",
+                      "etag": "W/\"4c820c84-3dec-4c9c-b9ff-f478347b27f4\"",
+                      "properties": {
+                          "provisioningState": "Succeeded",
+                          "addressPrefix": "10.0.0.0/24",
+                          "delegations": [],
+                          "privateEndpointNetworkPolicies": "Enabled",
+                          "privateLinkServiceNetworkPolicies": "Enabled"
+                      }
+                  }
+              ],
+              "virtualNetworkPeerings": [],
+              "enableDdosProtection": false,
+              "enableVmProtection": false
+          }
+      },
+      {
+          "type": "Microsoft.Storage/storageAccounts",
+          "apiVersion": "2019-04-01",
+          "name": "[parameters('storageAccounts_test3diag473_name')]",
+          "location": "eastus",
+          "tags": {
+              "CreatedBy": "Hugo Girard"
+          },
+          "sku": {
+              "name": "Standard_LRS",
+              "tier": "Standard"
+          },
+          "kind": "Storage",
+          "properties": {
+              "networkAcls": {
+                  "bypass": "AzureServices",
+                  "virtualNetworkRules": [],
+                  "ipRules": [],
+                  "defaultAction": "Allow"
+              },
+              "supportsHttpsTrafficOnly": true,
+              "encryption": {
+                  "services": {
+                      "file": {
+                          "enabled": true
+                      },
+                      "blob": {
+                          "enabled": true
+                      }
+                  },
+                  "keySource": "Microsoft.Storage"
+              }
+          }
+      },
+      {
+          "type": "Microsoft.Compute/virtualMachines/extensions",
+          "apiVersion": "2019-03-01",
+          "name": "[concat(parameters('virtualMachines_sql1_name'), '/Microsoft.Insights.VMDiagnosticsSettings')]",
+          "location": "eastus",
+          "dependsOn": [
+              "[resourceId('Microsoft.Compute/virtualMachines', parameters('virtualMachines_sql1_name'))]"
+          ],
+          "tags": {
+              "CreatedBy": "Hugo Girard"
+          },
+          "properties": {
+              "autoUpgradeMinorVersion": true,
+              "publisher": "Microsoft.Azure.Diagnostics",
+              "type": "IaaSDiagnostics",
+              "typeHandlerVersion": "1.5",
+              "settings": {
+                  "StorageAccount": "test3diag473",
+                  "xmlCfg": "[parameters('extensions_Microsoft.Insights.VMDiagnosticsSettings_xmlCfg')]"
+              },
+              "protectedSettings": {
+                  "storageAccountName": "[parameters('extensions_Microsoft.Insights.VMDiagnosticsSettings_storageAccountName')]",
+                  "storageAccountKey": "[parameters('extensions_Microsoft.Insights.VMDiagnosticsSettings_storageAccountKey')]",
+                  "storageAccountEndPoint": "[parameters('extensions_Microsoft.Insights.VMDiagnosticsSettings_storageAccountEndPoint')]"
+              }
+          }
+      },
+      {
+          "type": "Microsoft.Network/virtualNetworks/subnets",
+          "apiVersion": "2019-06-01",
+          "name": "[concat(parameters('virtualNetworks_test3_vnet_name'), '/default')]",
+          "dependsOn": [
+              "[resourceId('Microsoft.Network/virtualNetworks', parameters('virtualNetworks_test3_vnet_name'))]"
+          ],
+          "properties": {
+              "provisioningState": "Succeeded",
+              "addressPrefix": "10.0.0.0/24",
+              "delegations": [],
+              "privateEndpointNetworkPolicies": "Enabled",
+              "privateLinkServiceNetworkPolicies": "Enabled"
+          }
+      },
+      {
+          "type": "Microsoft.SqlVirtualMachine/sqlVirtualMachines",
+          "apiVersion": "2017-03-01-preview",
+          "name": "[parameters('sqlVirtualMachines_sql1_name')]",
+          "location": "eastus",
+          "dependsOn": [
+              "[resourceId('Microsoft.Compute/virtualMachines', parameters('virtualMachines_sql1_name'))]"
+          ],
+          "properties": {
+              "virtualMachineResourceId": "[resourceId('Microsoft.Compute/virtualMachines', parameters('virtualMachines_sql1_name'))]",
+              "sqlImageOffer": "SQL2017-WS2016",
+              "sqlServerLicenseType": "PAYG",
+              "sqlManagement": "Full",
+              "sqlImageSku": "Developer"
+          }
+      },
+      {
+          "type": "Microsoft.Storage/storageAccounts/blobServices",
+          "apiVersion": "2019-04-01",
+          "name": "[concat(parameters('storageAccounts_test3diag473_name'), '/default')]",
+          "dependsOn": [
+              "[resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccounts_test3diag473_name'))]"
+          ],
+          "properties": {
+              "cors": {
+                  "corsRules": []
+              },
+              "deleteRetentionPolicy": {
+                  "enabled": false
+              }
+          }
+      },
+      {
+          "type": "Microsoft.Compute/virtualMachines",
+          "apiVersion": "2019-03-01",
+          "name": "[parameters('virtualMachines_sql1_name')]",
+          "location": "eastus",
+          "dependsOn": [
+              "[resourceId('Microsoft.Network/networkInterfaces', parameters('networkInterfaces_sql1296_name'))]",
+              "[resourceId('Microsoft.Storage/StorageAccounts', parameters('storageAccounts_test3diag473_name'))]"
+          ],
+          "tags": {
+              "CreatedBy": "Hugo Girard"
+          },
+          "properties": {
+              "hardwareProfile": {
+                  "vmSize": "Standard_B2s"
+              },
+              "storageProfile": {
+                  "imageReference": {
+                      "publisher": "MicrosoftSQLServer",
+                      "offer": "SQL2017-WS2016",
+                      "sku": "SQLDEV",
+                      "version": "latest"
+                  },
+                  "osDisk": {
+                      "osType": "Windows",
+                      "name": "[concat(parameters('virtualMachines_sql1_name'), '_OsDisk_1_932ae9fc489247028cdf5f4403d0ecba')]",
+                      "createOption": "FromImage",
+                      "caching": "ReadWrite",
+                      "managedDisk": {
+                          "storageAccountType": "Premium_LRS",
+                          "id": "[resourceId('Microsoft.Compute/disks', concat(parameters('virtualMachines_sql1_name'), '_OsDisk_1_932ae9fc489247028cdf5f4403d0ecba'))]"
+                      },
+                      "diskSizeGB": 127
+                  },
+                  "dataDisks": [
+                      {
+                          "lun": 0,
+                          "name": "[concat(parameters('virtualMachines_sql1_name'), '_disk2_c4956181da694ea5b0a525e620ce8441')]",
+                          "createOption": "Empty",
+                          "caching": "ReadOnly",
+                          "writeAcceleratorEnabled": false,
+                          "managedDisk": {
+                              "storageAccountType": "Premium_LRS",
+                              "id": "[resourceId('Microsoft.Compute/disks', concat(parameters('virtualMachines_sql1_name'), '_disk2_c4956181da694ea5b0a525e620ce8441'))]"
+                          },
+                          "diskSizeGB": 1023,
+                          "toBeDetached": false
+                      }
+                  ]
+              },
+              "osProfile": {
+                  "computerName": "[parameters('virtualMachines_sql1_name')]",
+                  "adminUsername": "pladmin",
+                  "windowsConfiguration": {
+                      "provisionVMAgent": true,
+                      "enableAutomaticUpdates": true
+                  },
+                  "secrets": [],
+                  "allowExtensionOperations": true
+              },
+              "networkProfile": {
+                  "networkInterfaces": [
+                      {
+                          "id": "[resourceId('Microsoft.Network/networkInterfaces', parameters('networkInterfaces_sql1296_name'))]"
+                      }
+                  ]
+              },
+              "diagnosticsProfile": {
+                  "bootDiagnostics": {
+                      "enabled": true,
+                      "storageUri": "[concat('https://', parameters('storageAccounts_test3diag473_name'), '.blob.core.windows.net/')]"
+                  }
+              }
+          }
+      },
+      {
+          "type": "Microsoft.Storage/storageAccounts/blobServices/containers",
+          "apiVersion": "2019-04-01",
+          "name": "[concat(parameters('storageAccounts_test3diag473_name'), '/default/bootdiagnostics-sql1-bdb68f24-cb22-4ae9-969a-54dc085430e9')]",
+          "dependsOn": [
+              "[resourceId('Microsoft.Storage/storageAccounts/blobServices', parameters('storageAccounts_test3diag473_name'), 'default')]",
+              "[resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccounts_test3diag473_name'))]"
+          ],
+          "properties": {
+              "publicAccess": "None"
+          }
+      },
+      {
+          "type": "Microsoft.Network/networkInterfaces",
+          "apiVersion": "2019-06-01",
+          "name": "[parameters('networkInterfaces_sql1296_name')]",
+          "location": "eastus",
+          "dependsOn": [
+              "[resourceId('Microsoft.Network/publicIPAddresses', parameters('publicIPAddresses_sql1_ip_name'))]",
+              "[resourceId('Microsoft.Network/virtualNetworks/subnets', parameters('virtualNetworks_test3_vnet_name'), 'default')]",
+              "[resourceId('Microsoft.Network/networkSecurityGroups', parameters('networkSecurityGroups_sql1_nsg_name'))]"
+          ],
+          "tags": {
+              "CreatedBy": "Hugo Girard"
+          },
+          "properties": {
+              "provisioningState": "Succeeded",
+              "resourceGuid": "a0dd2b0c-0234-4bed-91e7-543badea0f9f",
+              "ipConfigurations": [
+                  {
+                      "name": "ipconfig1",
+                      "etag": "W/\"eb985cc5-57b9-40aa-a0aa-873ea10cbeed\"",
+                      "properties": {
+                          "provisioningState": "Succeeded",
+                          "privateIPAddress": "10.0.0.4",
+                          "privateIPAllocationMethod": "Dynamic",
+                          "publicIPAddress": {
+                              "id": "[resourceId('Microsoft.Network/publicIPAddresses', parameters('publicIPAddresses_sql1_ip_name'))]"
+                          },
+                          "subnet": {
+                              "id": "[resourceId('Microsoft.Network/virtualNetworks/subnets', parameters('virtualNetworks_test3_vnet_name'), 'default')]"
+                          },
+                          "primary": true,
+                          "privateIPAddressVersion": "IPv4"
+                      }
+                  }
+              ],
+              "dnsSettings": {
+                  "dnsServers": [],
+                  "appliedDnsServers": [],
+                  "internalDomainNameSuffix": "5mv3sr0yhw0exg42spsfzucs0b.bx.internal.cloudapp.net"
+              },
+              "macAddress": "00-0D-3A-55-D5-4B",
+              "enableAcceleratedNetworking": false,
+              "enableIPForwarding": false,
+              "networkSecurityGroup": {
+                  "id": "[resourceId('Microsoft.Network/networkSecurityGroups', parameters('networkSecurityGroups_sql1_nsg_name'))]"
+              },
+              "primary": true,
+              "tapConfigurations": []
+          }
       }
-    ],
-    "outputs": {
-      "adminUsername": {
-        "type": "String",
-        "value": "[parameters('adminUsername')]"
-      }
-    }
-  }
+  ]
+}
