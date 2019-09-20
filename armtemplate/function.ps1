@@ -9,6 +9,6 @@ function generateDeploymentName() {
   $f = $firstRandomWordsList[ (Get-Random $firstRandomWordsList.count) ]
   $m = [char] (65 + (Get-Random $secondRandomWordsList.count))
   $l = $secondRandomWordsList[ (Get-Random $secondRandomWordsList.count) ]
-  $generatedName = $f + " " + $m + " " + $l
+  $generatedName = $f + "-" + $m + "-" + $l
   return $generatedName
 }

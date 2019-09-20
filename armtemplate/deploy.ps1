@@ -1,4 +1,4 @@
-.\function.ps1
+. .\function.ps1
 
 <#
  This script deploy all the infrastructure of the FakeInsurance Azure Architecture
@@ -34,6 +34,10 @@ if ($locationIdx -gt 3 -or $locationIdx -lt 1) {
 $selectedLocation = $primaryLocations[$locationIdx]
 $deploymentName = generateDeploymentName
 
+# Create the resource group
+New-AzResourceGroup -Name $resourceGroupName -Location $selectedLocation
+
+Write-Host "Resource group $resourceGroupName created"
 
 New-AzResourceGroupDeployment -Name $deploymentName -ResourceGroupName $resourceGroupName -TemplateFile .\template.json -location $selectedLocation
 
