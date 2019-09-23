@@ -1,5 +1,8 @@
 import { Router } from 'express';
 
 export abstract class BaseController {
-    abstract initRoutes():Router;
+
+    abstract get prefix(): string;
+
+    abstract initRoutes(router:Router):Router;
 }
