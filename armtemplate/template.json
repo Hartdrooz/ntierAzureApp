@@ -22,6 +22,10 @@
             "defaultValue": "150.0.2.0/24",
             "type": "string"
         },
+        "subnet_bastion_prefix":{
+            "defaultValue": "150.0.3.0/27",
+            "type": "string"
+        },
         "adminUsername": {
             "type": "string",
             "metadata": {
@@ -44,7 +48,8 @@
         "storage_name": "[concat('ntierstorage',substring(uniqueString(resourceGroup().id),0,6))]",
         "sqlVM": "sql1",
         "appVM": "app1",
-        "subnetRef": "[resourceID('Microsoft.Network/virtualNetWorks/subnets', variables('vnet_name'), 'data')]",
+        "subnetDataRef": "[resourceID('Microsoft.Network/virtualNetWorks/subnets', variables('vnet_name'), 'data')]",        
+        "subnetAppRef": "[resourceID('Microsoft.Network/virtualNetWorks/subnets', variables('vnet_name'), 'app')]",        
         "sqlnetworkInterface": "nic-sql",
         "appnetworkInterface": "nic-app",
         "appPlanName": "linux-app-plan" ,
@@ -84,7 +89,13 @@
                                 "id": "[resourceId('Microsoft.Network/networkSecurityGroups', variables('nsg-lockdown'))]"
                             }
                         }
-                    }                    
+                    },
+                    {
+                        "name": "AzureBastionSubnet",                        
+                        "properties": {                            
+                            "addressPrefix": "[parameters('subnet_bastion_prefix')]"
+                        }                        
+                    }                 
                 ]
             }
         },
@@ -115,7 +126,21 @@
                 "privateEndpointNetworkPolicies": "Enabled",
                 "privateLinkServiceNetworkPolicies": "Enabled"
             }
-        },                
+        },      
+        {
+            "type": "Microsoft.Network/virtualNetworks/subnets",
+            "apiVersion": "2019-06-01",
+            "name": "[concat(variables('vnet_name'), '/AzureBastionSubnet')]",
+            "dependsOn": [
+                "[resourceId('Microsoft.Network/virtualNetworks', variables('vnet_name'))]"
+            ],
+            "properties": {                
+                "addressPrefix": "[parameters('subnet_bastion_prefix')]",
+                "delegations": [],
+                "privateEndpointNetworkPolicies": "Enabled",
+                "privateLinkServiceNetworkPolicies": "Enabled"
+            }
+        },                  
         {
             "type": "Microsoft.Network/publicIPAddresses",
             "apiVersion": "2019-06-01",
@@ -150,7 +175,7 @@
                   "name": "ipconfig1",
                   "properties": {
                     "subnet": {
-                      "id": "[variables('subnetRef')]"
+                      "id": "[variables('subnetDataRef')]"
                     },
                     "privateIPAllocationMethod": "Dynamic",
                     "publicIpAddress": {
@@ -176,7 +201,7 @@
                   "name": "ipconfig2",
                   "properties": {
                     "subnet": {
-                      "id": "[variables('subnetRef')]"
+                      "id": "[variables('subnetAppRef')]"
                     },
                     "privateIPAllocationMethod": "Dynamic",
                     "publicIpAddress": {
