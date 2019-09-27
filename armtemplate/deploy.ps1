@@ -39,6 +39,6 @@ New-AzResourceGroup -Name $resourceGroupName -Location $selectedLocation
 
 Write-Host "Resource group $resourceGroupName created"
 
-New-AzResourceGroupDeployment -Name $deploymentName -ResourceGroupName $resourceGroupName -TemplateFile .\template.json -location $selectedLocation
+New-AzResourceGroupDeployment -Name $deploymentName -ResourceGroupName $resourceGroupName -TemplateFile .\stack.json -location $selectedLocation
 
 Write-Host "Deployment completed with deployment name $deploymentName"
